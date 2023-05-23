@@ -1,0 +1,1 @@
+# Ip-static-resize-disk-CentOS-Ubuntu-
