@@ -53,7 +53,7 @@ resize_disk() {
 # Function to set static IP for CentOS
 set_static_ip_centos() {
     read -p "Enter the IP address: " ip_address
-    read -p "Enter the subnet mask: " subnet_mask
+    read -p "Enter the subnet mask es. 255.255.255.0: " subnet_mask
     read -p "Enter the default gateway: " default_gateway
     read -p "Enter the primary DNS server: " primary_dns
 
@@ -81,7 +81,7 @@ EOF
 # Function to set static IP for Ubuntu
 set_static_ip_ubuntu() {
     read -p "Enter the IP address: " ip_address
-    read -p "Enter the subnet mask: " subnet_mask
+    read -p "Enter the subnet mask es. 24 (without /): " subnet_mask
     read -p "Enter the default gateway: " default_gateway
     read -p "Enter the primary DNS server: " primary_dns
     read -p "Enter the secondary DNS server: " secondary_dns
