@@ -15,8 +15,66 @@ echo
 # Confirmation prompt
 read -p "Press Enter to continue or Ctrl+C to exit."
 
-# Function to resize disk
-resize_disk() {
+# Function to set static IP for CentOS
+set_static_ip_centos() {
+    read -p "Enter the IP address: " ip_address
+    read -p "Enter the subnet mask es. 255.255.255.0: " subnet_mask
+    read -p "Enter the default gateway: " default_gateway
+    read -p "Enter the primary DNS server: " primary_dns
+
+    # Update network configuration file
+    cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eth0 > /dev/null
+DEVICE=eth0
+ONBOOT=yes
+BOOTPROTO=static
+TYPE=Ethernet
+NM_CONTROLLED=no
+IPADDR=$ip_address
+NETMASK=$subnet_mask
+GATEWAY=$default_gateway
+DNS1=$primary_dns
+EOF
+
+    # Restart network service
+    sudo systemctl restart network
+    echo "Static IP set successfully for CentOS."
+
+    # Resize root partition
+    resize_disk_centos
+}
+
+# Function to set static IP for Ubuntu
+set_static_ip_ubuntu() {
+    read -p "Enter the IP address: " ip_address
+    read -p "Enter the subnet mask es. 24 (without /): " subnet_mask
+    read -p "Enter the default gateway: " default_gateway
+    read -p "Enter the primary DNS server: " primary_dns
+    read -p "Enter the secondary DNS server: " secondary_dns
+
+    # Update network configuration file
+    cat << EOF | sudo tee /etc/netplan/01-netcfg.yaml > /dev/null
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses: [$ip_address/$subnet_mask]
+      gateway4: $default_gateway
+      nameservers:
+        addresses: [$primary_dns, $secondary_dns]
+EOF
+
+    # Apply network configuration
+    sudo netplan apply
+    echo "Static IP set successfully for Ubuntu."
+
+    # Resize root partition
+    resize_disk_ubuntu
+}
+
+# Function to resize disk for CentOS
+resize_disk_centos() {
     # Check if the parted command is available
     if ! command -v parted &> /dev/null; then
         echo "Parted command not found. Please install it."
@@ -50,62 +108,16 @@ resize_disk() {
     echo "Disk resize completed successfully."
 }
 
-# Function to set static IP for CentOS
-set_static_ip_centos() {
-    read -p "Enter the IP address: " ip_address
-    read -p "Enter the subnet mask es. 255.255.255.0: " subnet_mask
-    read -p "Enter the default gateway: " default_gateway
-    read -p "Enter the primary DNS server: " primary_dns
+# Function to resize disk for Ubuntu
+resize_disk_ubuntu() {
+    # Resize the root partition using growpart
+    sudo growpart /dev/xvda 3
 
-    # Update network configuration file
-    cat << EOF | sudo tee /etc/sysconfig/network-scripts/ifcfg-eth0 > /dev/null
-DEVICE=eth0
-ONBOOT=yes
-BOOTPROTO=static
-TYPE=Ethernet
-NM_CONTROLLED=no
-IPADDR=$ip_address
-NETMASK=$subnet_mask
-GATEWAY=$default_gateway
-DNS1=$primary_dns
-EOF
+    # Extend the logical volume and resize the filesystem
+    sudo lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+    sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
 
-    # Restart network service
-    sudo systemctl restart network
-    echo "Static IP set successfully for CentOS."
-
-    # Resize root partition
-    resize_disk
-}
-
-# Function to set static IP for Ubuntu
-set_static_ip_ubuntu() {
-    read -p "Enter the IP address: " ip_address
-    read -p "Enter the subnet mask es. 24 (without /): " subnet_mask
-    read -p "Enter the default gateway: " default_gateway
-    read -p "Enter the primary DNS server: " primary_dns
-    read -p "Enter the secondary DNS server: " secondary_dns
-
-    # Update network configuration file
-    cat << EOF | sudo tee /etc/netplan/01-netcfg.yaml > /dev/null
-network:
-  version: 2
-  renderer: networkd
-  ethernets:
-    eth0:
-      dhcp4: no
-      addresses: [$ip_address/$subnet_mask]
-      gateway4: $default_gateway
-      nameservers:
-        addresses: [$primary_dns, $secondary_dns]
-EOF
-
-    # Apply network configuration
-    sudo netplan apply
-    echo "Static IP set successfully for Ubuntu."
-
-    # Resize root partition
-    resize_disk
+    echo "Disk resize completed successfully."
 }
 
 # Determine the current Linux system
