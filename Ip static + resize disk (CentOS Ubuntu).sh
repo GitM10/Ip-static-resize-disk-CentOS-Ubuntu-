@@ -60,7 +60,9 @@ network:
     eth0:
       dhcp4: no
       addresses: [$ip_address/$subnet_mask]
-      gateway4: $default_gateway
+      routes:
+        - to: default
+          via: $default_gateway
       nameservers:
         addresses: [$primary_dns, $secondary_dns]
 EOF
