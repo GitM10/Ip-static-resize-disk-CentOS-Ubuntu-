@@ -116,7 +116,7 @@ resize_disk_ubuntu() {
     sudo growpart /dev/xvda 3
 
     # Extend the logical volume and resize the filesystem
-    sudo lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+    sudo lvextend -r -l +100%FREE /dev/mapper/ubuntu--vg-ubuntu--lv
     sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
 
     echo "Disk resize completed successfully."
